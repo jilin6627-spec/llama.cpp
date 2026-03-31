@@ -145,6 +145,7 @@ int main(int argc, char ** argv) {
 
     llama_context * ctx;
     common_init_result_ptr init_result;
+    llama_context_ptr ctx2;
     llama_model_ptr model;
 
     if (params.model.hf_repo.empty()) {
@@ -176,7 +177,8 @@ int main(int argc, char ** argv) {
         }
 
         llama_context_params ctx_params = llama_context_default_params();
-        ctx = llama_init_from_model(model.get(), ctx_params);
+        ctx2.reset(llama_init_from_model(model.get(), ctx_params));
+        ctx = ctx2.get();
 
         if (!ctx) {
             LOG_ERR("failed to create llama_context\n");
@@ -218,11 +220,6 @@ int main(int argc, char ** argv) {
 
     for (const auto& test : tests) {
         test.serialize(f);
-    }
-
-    if (!params.model.hf_repo.empty()) {
-        // Context is not owned by common_init_result in this case
-        llama_free(ctx);
     }
 
     return 0;
