@@ -159,7 +159,7 @@ int main(int argc, char ** argv) {
             hf_quant = "Q4_K_M";
         }
 
-        gguf_context * gguf_ctx = gguf_fetch_gguf_ctx(hf_repo, hf_quant);
+        gguf_context_ptr gguf_ctx = gguf_fetch_gguf_ctx(hf_repo, hf_quant);
         if (!gguf_ctx) {
             LOG_ERR("failed to fetch GGUF metadata from %s\n", hf_repo.c_str());
             return 1;
@@ -168,8 +168,7 @@ int main(int argc, char ** argv) {
         llama_model_params model_params = llama_model_default_params();
         model_params.devices = params.devices.data();
 
-        model.reset(llama_model_init_from_user(gguf_ctx, set_tensor_data, nullptr, model_params));
-        gguf_free(gguf_ctx);
+        model.reset(llama_model_init_from_user(gguf_ctx.get(), set_tensor_data, nullptr, model_params));
 
         if (!model) {
             LOG_ERR("failed to create llama_model from %s\n", hf_repo.c_str());

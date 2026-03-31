@@ -4,6 +4,7 @@
 #include "gguf-model-data.h"
 
 #include "common.h"
+#include "ggml-cpp.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -616,7 +617,7 @@ std::optional<gguf_remote_model> gguf_fetch_model_meta(
     return model_opt;
 }
 
-gguf_context * gguf_fetch_gguf_ctx(
+gguf_context_ptr gguf_fetch_gguf_ctx(
         const std::string & repo,
         const std::string & quant,
         const std::string & cache_dir) {
@@ -640,13 +641,14 @@ gguf_context * gguf_fetch_gguf_ctx(
 
     const std::string cache_path = get_cache_file_path(cdir, repo_part, filename);
 
-    ggml_context * ggml_ctx;
+    ggml_context_ptr ggml_ctx_ptr;
+    ggml_context * ggml_ctx{};
     gguf_init_params params{true, &ggml_ctx};
-    gguf_context * ctx = gguf_init_from_file(cache_path.c_str(), params);
+    gguf_context_ptr ctx{gguf_init_from_file(cache_path.c_str(), params)};
+    ggml_ctx_ptr.reset(ggml_ctx);
 
     if (ctx == nullptr) {
         fprintf(stderr, "gguf_fetch: gguf_init_from_file failed\n");
-        ggml_free(ggml_ctx);
         return nullptr;
     }
 
@@ -654,8 +656,6 @@ gguf_context * gguf_fetch_gguf_ctx(
     if (model.n_split > 1) {
         if (split_prefix.empty()) {
             fprintf(stderr, "gguf_fetch: model reports %u splits but filename has no split pattern\n", model.n_split);
-            gguf_free(ctx);
-            ggml_free(ggml_ctx);
             return nullptr;
         }
 
@@ -671,37 +671,29 @@ gguf_context * gguf_fetch_gguf_ctx(
             auto shard = fetch_or_cached(repo, shard_name, cdir, repo_part);
             if (!shard.has_value()) {
                 fprintf(stderr, "gguf_fetch: failed to fetch shard %d: %s\n", i, shard_name.c_str());
-                gguf_free(ctx);
-                ggml_free(ggml_ctx);
                 return nullptr;
             }
 
             // Load tensors from shard and add to main gguf_context
             const std::string shard_path = get_cache_file_path(cdir, repo_part, shard_name);
-            ggml_context * shard_ggml_ctx;
+            ggml_context_ptr shard_ggml_ctx_ptr;
+            ggml_context * shard_ggml_ctx{};
             gguf_init_params shard_params{true, &shard_ggml_ctx};
-            gguf_context * shard_ctx = gguf_init_from_file(shard_path.c_str(), shard_params);
+            gguf_context_ptr shard_ctx{gguf_init_from_file(shard_path.c_str(), shard_params)};
+            shard_ggml_ctx_ptr.reset(shard_ggml_ctx);
 
             if (shard_ctx == nullptr) {
                 fprintf(stderr, "gguf_fetch: shard gguf_init_from_file failed\n");
-                ggml_free(shard_ggml_ctx);
-                gguf_free(ctx);
-                ggml_free(ggml_ctx);
                 return nullptr;
             }
 
             for (ggml_tensor * t = ggml_get_first_tensor(shard_ggml_ctx); t; t = ggml_get_next_tensor(shard_ggml_ctx, t)) {
-                gguf_add_tensor(ctx, t);
+                gguf_add_tensor(ctx.get(), t);
             }
-
-            gguf_free(shard_ctx);
-            ggml_free(shard_ggml_ctx);
         }
 
-        gguf_set_val_u16(ctx, "split.count", 1);
+        gguf_set_val_u16(ctx.get(), "split.count", 1);
     }
-
-    ggml_free(ggml_ctx);
 
     return ctx;
 }
