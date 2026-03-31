@@ -1215,10 +1215,6 @@ struct ggml_tensor * llama_model_loader::create_tensor(
         const int64_t tid = gguf_find_tensor(metadata, tn.str().c_str());
         if (tid != -1) {
             type = gguf_get_tensor_type(metadata, tid);
-        } else if (flags & TENSOR_NOT_REQUIRED) {
-            // If the tensor is not found and not required, return nullptr to allow
-            // the caller to fall back
-            return nullptr;
         }
 
         // for tensors that are not required some of the dimensions can be invalid:

@@ -167,6 +167,7 @@ int main(int argc, char ** argv) {
 
         llama_model_params model_params = llama_model_default_params();
         model_params.devices = params.devices.data();
+        model_params.no_alloc = true;
 
         model.reset(llama_model_init_from_user(gguf_ctx.get(), set_tensor_data, nullptr, model_params));
 
