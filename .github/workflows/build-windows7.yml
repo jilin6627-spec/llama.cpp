@@ -10,41 +10,50 @@ on:
 jobs:
   build-windows7:
     runs-on: windows-2022
-    name: Build for Windows 7 SP1 (MinGW)
+    name: Build for Windows 7 SP1
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
-          version: 13.2.0
-
-      - name: Configure CMake (MinGW, Windows 7 compatible)
+      - name: Patch: remove cpp-httplib from CMakeLists.txt
         shell: bash
         run: |
-          cmake -B build -G "MinGW Makefiles" \
-            -DCMAKE_SYSTEM_VERSION=6.1 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DLLAMA_STATIC=ON \
-            -DLLAMA_NATIVE=OFF \
-            -DLLAMA_AVX=ON \
-            -DLLAMA_AVX2=OFF \
-            -DLLAMA_FMA=OFF \
-            -DLLAMA_F16C=OFF \
-            -DLLAMA_BUILD_SERVER=OFF \
-            -DLLAMA_BUILD_TESTS=OFF
+          sed -i '/add_subdirectory(vendor\/cpp-httplib)/d' CMakeLists.txt
 
-      - name: Build
-        shell: bash
-        run: cmake --build build --config Release -j 4
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure CMake (Windows 7 compatible, minimal build)
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_SYSTEM_VERSION=6.1 `
+            -DCMAKE_C_FLAGS="/D_WIN32_WINNT=0x0601 /DWINVER=0x0601" `
+            -DCMAKE_CXX_FLAGS="/D_WIN32_WINNT=0x0601 /DWINVER=0x0601 /EHsc" `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DLLAMA_STATIC=ON `
+            -DLLAMA_NATIVE=OFF `
+            -DLLAMA_AVX=ON `
+            -DLLAMA_AVX2=OFF `
+            -DLLAMA_FMA=OFF `
+            -DLLAMA_F16C=OFF `
+            -DLLAMA_BUILD_SERVER=OFF `
+            -DLLAMA_BUILD_TESTS=OFF `
+            -DLLAMA_BUILD_EXAMPLES=OFF `
+            -DLLAMA_BUILD_TOOLS=OFF
+
+      - name: Build core library and basic CLI
+        run: |
+          cmake --build build --config Release --target llama -j 4
+          cmake --build build --config Release --target llama-cli -j 4
+          cmake --build build --config Release --target llama-quantize -j 4
+          cmake --build build --config Release --target llama-gguf -j 4
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: llama-cpp-windows7-mingw
+          name: llama-cpp-windows7-core
           path: |
-            build/bin/*.exe
+            build/bin/Release/*.exe
