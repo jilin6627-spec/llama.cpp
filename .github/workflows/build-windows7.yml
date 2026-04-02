@@ -1,4 +1,4 @@
-name: Build llama.cpp (Windows 7 / Ubuntu 20.04 Compatible)
+name: Build llama.cpp (Windows 7 SP1 Compatible)
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   build-windows7:
     runs-on: windows-2022
-    name: Build for Windows 7
+    name: Build for Windows 7 SP1
 
     steps:
       - name: Checkout code
@@ -45,37 +45,3 @@ jobs:
           path: |
             build/bin/Release/*.exe
             build/bin/Release/*.dll
-
-  build-ubuntu2004:
-    runs-on: ubuntu-22.04
-    name: Build for Ubuntu 20.04
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Ubuntu 20.04 build environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-9 g++-9 build-essential cmake
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
-
-      - name: Configure CMake
-        run: |
-          cmake -B build \
-            -DCMAKE_C_COMPILER=gcc-9 \
-            -DCMAKE_CXX_COMPILER=g++-9 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DLLAMA_STATIC=ON \
-            -DLLAMA_NATIVE=OFF
-
-      - name: Build
-        run: cmake --build build --config Release -j 4
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: llama-cpp-ubuntu2004
-          path: build/bin/*

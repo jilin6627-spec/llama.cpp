@@ -1,0 +1,43 @@
+name: Build llama.cpp (Ubuntu 20.04 Compatible)
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-ubuntu2004:
+    runs-on: ubuntu-22.04
+    name: Build for Ubuntu 20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ubuntu 20.04 build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-9 g++-9 build-essential cmake
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=gcc-9 \
+            -DCMAKE_CXX_COMPILER=g++-9 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DLLAMA_STATIC=ON \
+            -DLLAMA_NATIVE=OFF
+
+      - name: Build
+        run: cmake --build build --config Release -j 4
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-cpp-ubuntu2004
+          path: build/bin/*
