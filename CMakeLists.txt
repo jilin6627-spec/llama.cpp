@@ -198,8 +198,7 @@ add_subdirectory(src)
 
 if (LLAMA_BUILD_COMMON)
     add_subdirectory(common)
-    # Skip cpp-httplib for Windows 7 compatibility
-    # add_subdirectory(vendor/cpp-httplib)
+    add_subdirectory(vendor/cpp-httplib)
 endif()
 
 if (LLAMA_BUILD_COMMON AND LLAMA_BUILD_TESTS AND NOT CMAKE_JS_VERSION)
