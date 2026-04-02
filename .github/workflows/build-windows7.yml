@@ -24,19 +24,19 @@ jobs:
       - name: Configure CMake (Windows 7 compatible, HTTP only)
         run: |
           cmake -B build -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_SYSTEM_VERSION=6.1 `
-            -DCMAKE_C_FLAGS="/D_WIN32_WINNT=0x0601 /DWINVER=0x0601" `
-            -DCMAKE_CXX_FLAGS="/D_WIN32_WINNT=0x0601 /DWINVER=0x0601 /EHsc" `
-            -DBUILD_SHARED_LIBS=OFF `
-            -DLLAMA_STATIC=ON `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DLLAMA_OPENSSL=OFF `
+            -DLLAMA_BUILD_TOOLS=ON `
+            -DLLAMA_BUILD_EXAMPLES=ON `
+            -DLLAMA_BUILD_SERVER=ON `
+            -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_NATIVE=OFF `
             -DLLAMA_AVX=ON `
             -DLLAMA_AVX2=OFF `
             -DLLAMA_FMA=OFF `
             -DLLAMA_F16C=OFF `
-            -DLLAMA_BUILD_SERVER=ON `
-            -DLLAMA_OPENSSL=OFF `
-            -DLLAMA_BUILD_TESTS=OFF
+            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601 /DWINVER=0x0601 /EHsc" `
+            -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601 /DWINVER=0x0601"
 
       - name: Build Release
         run: cmake --build build --config Release -j 4
